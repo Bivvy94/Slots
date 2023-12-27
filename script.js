@@ -96,6 +96,19 @@ function spin() {
         } else {
             playerBalance -= wager;
             updateBalance(`Try again. You lost ${wager} coins.`);
+
+            // Check if the player is out of money
+            if (playerBalance <= 0) {
+                const startOver = confirm("You are out of money. Do you want to start over?");
+                if (startOver) {
+                    // Reset the player's balance to the default value
+                    playerBalance = 100;
+                    updateBalance("Game restarted. Good luck!");
+                } else {
+                    // Optionally, you can disable the spin button or provide other options
+                    // based on your game design.
+                }
+            }
         }
     }, 2000);
 }
