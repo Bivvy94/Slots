@@ -9,7 +9,7 @@ const payouts = {
 };
 
 // Retrieve player balance from local storage or use a default value
-let playerBalance = parseInt(localStorage.getItem("playerBalance")) || 100;
+let playerBalance = parseInt(localStorage.getItem("playerBalance")) || 150;
 
 function getRandomSymbol() {
     const randomValue = Math.random();
