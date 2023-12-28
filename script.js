@@ -1,14 +1,13 @@
 const symbols = ["cherry", "lemon", "orange", "plum", "bell", "bar"];
 const payouts = {
-    "cherry": 5,
+    "cherry": 50,
     "lemon": 10,
     "orange": 15,
     "plum": 20,
-    "bell": 30,
-    "bar": 50
+    "bell": 40,
+    "bar": 5
 };
 
-// Retrieve player balance from local storage or use a default value
 let playerBalance = parseInt(localStorage.getItem("playerBalance")) || 150;
 
 function getRandomSymbol() {
@@ -16,7 +15,7 @@ function getRandomSymbol() {
     let cumulativeProbability = 0;
 
     for (const symbol of symbols) {
-        cumulativeProbability += 0.4;
+        cumulativeProbability += 0.45; // Adjust probabilities based on the number of symbols
 
         if (randomValue <= cumulativeProbability) {
             return symbol;
@@ -46,17 +45,24 @@ function shuffleReel(reelElement, stopSymbol) {
     shuffleFrame();
 }
 
-function updateBalance(resultMessage) {
+function updateBalance(resultMessage, flashClass) {
     const balanceElement = document.getElementById("balance");
     const resultElement = document.getElementById("result");
 
-    playerBalanceText = `Balance: $${playerBalance}`;
+    playerBalanceText = `Balance: $${playerBalance.toLocaleString()}`;
     resultText = resultMessage ? `\n${resultMessage}` : '';
 
-    balanceElement.textContent = `${playerBalanceText}${resultText}`;
+    balanceElement.textContent = playerBalanceText;
+    resultElement.textContent = resultText;
 
-    // Save the updated balance to local storage
     localStorage.setItem("playerBalance", playerBalance.toString());
+
+    // Remove the flashing class after a delay
+    if (flashClass) {
+        setTimeout(() => {
+            document.querySelector('.reels').classList.remove(flashClass);
+        }, 2000);
+    }
 }
 
 function spin() {
@@ -73,6 +79,9 @@ function spin() {
     reel2.style.backgroundImage = `url('images/${result2}.png')`;
     reel3.style.backgroundImage = `url('images/${result3}.png')`;
 
+    // Remove the flashing class before starting the spin
+    document.querySelector('.reels').classList.remove('flash');
+
     shuffleReel(reel1, result1);
     shuffleReel(reel2, result2);
     shuffleReel(reel3, result3);
@@ -80,7 +89,7 @@ function spin() {
     const wager = parseInt(wagerInput.value, 10);
 
     if (isNaN(wager) || wager <= 0 || wager > playerBalance) {
-        updateBalance("Invalid wager. Please enter a valid amount.");
+        updateBalance("Invalid wager. Please enter a valid amount.", '');
         return;
     }
 
@@ -92,28 +101,27 @@ function spin() {
         if (result1 === result2 && result2 === result3) {
             const payout = payouts[result1] * wager;
             playerBalance += payout;
-            updateBalance(`Congratulations! You won ${payout} coins!`);
+
+            // Flashing effect when there's a win
+            document.querySelector('.reels').classList.add('flash');
+            updateBalance(`Congratulations! You won ${payout.toLocaleString()} coins!`, 'flash');
         } else {
             playerBalance -= wager;
-            updateBalance(`Try again. You lost ${wager} coins.`);
-
-            // Check if the player is out of money
+            updateBalance(`Try again. You lost ${wager.toLocaleString()} coins.`, '');
+            
             if (playerBalance <= 0) {
                 const startOver = confirm("You are out of money. Do you want to start over?");
                 if (startOver) {
-                    // Reset the player's balance to the default value
                     playerBalance = 100;
-                    updateBalance("Game restarted. Good luck!");
+                    updateBalance("Game restarted. Good luck!", '');
                 } else {
                     // Optionally, you can disable the spin button or provide other options
-                    // based on your game design.
                 }
             }
         }
     }, 2000);
 }
 
-// Initial balance update
 updateBalance();
 
 document.getElementById("spinButton").addEventListener("click", spin);
