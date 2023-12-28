@@ -1,6 +1,6 @@
 const symbols = ["cherry", "lemon", "orange", "plum", "bell", "bar"];
 const payouts = {
-    "cherry": 50,
+    "cherry": 20,
     "lemon": 10,
     "orange": 15,
     "plum": 20,
