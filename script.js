@@ -1,11 +1,14 @@
+const ANIMATION_DURATION = 1500;
+const RESULT_DISPLAY_DELAY = 1600;
+
 const symbols = ["cherry", "lemon", "orange", "plum", "bell", "bar"];
 const payouts = {
-    "cherry": 20,
-    "lemon": 10,
-    "orange": 15,
-    "plum": 20,
-    "bell": 40,
-    "bar": 5
+    "lemon": 5,
+    "orange": 10,
+    "plum": 15,
+    "bar": 25,
+    "cherry": 30,
+    "bell": 50
 };
 
 let playerBalance = parseInt(localStorage.getItem("playerBalance")) || 150;
@@ -14,31 +17,65 @@ function getRandomSymbol() {
     const randomValue = Math.random();
     let cumulativeProbability = 0;
 
+    // Calculate the total payout for all symbols
+    const totalPayout = Object.values(payouts).reduce((total, payout) => total + payout, 0);
+
+    const adjustedProbabilities = {};
+
+    // Define adjustment factors for each symbol
+    const adjustmentFactors = {
+        "cherry": 0.9,
+        "lemon": 1.2,
+        "orange": 1.15,
+        "plum": 1.0,
+        "bell": 0.8,
+        "bar": 0.95
+    };
+
+    // Adjust the probability for each symbol individually
+    symbols.forEach(symbol => {
+        const symbolProbability = payouts[symbol] / totalPayout;
+        adjustedProbabilities[symbol] = symbolProbability * adjustmentFactors[symbol];
+    });
+
     for (const symbol of symbols) {
-        cumulativeProbability += 0.45; // Adjust probabilities based on the number of symbols
+        cumulativeProbability += adjustedProbabilities[symbol];
 
         if (randomValue <= cumulativeProbability) {
             return symbol;
         }
     }
 
+    // Fallback to a random symbol if something goes wrong
     return symbols[Math.floor(Math.random() * symbols.length)];
 }
 
-function shuffleReel(reelElement, stopSymbol) {
+
+
+
+function setReelBackground(reelElement, symbol) {
+    reelElement.style.backgroundImage = `url('images/${symbol}.png')`;
+}
+
+function spinReel(reelElement, stopSymbol) {
     const startTime = Date.now();
-    const duration = 1500;
+    let isSpinning = true;
 
     function shuffleFrame() {
+        if (!isSpinning) {
+            setReelBackground(reelElement, stopSymbol);
+            return;
+        }
+
         const currentTime = Date.now();
         const elapsed = currentTime - startTime;
 
-        if (elapsed < duration) {
-            const randomSymbol = getRandomSymbol();
-            reelElement.style.backgroundImage = `url('images/${randomSymbol}.png')`;
+        if (elapsed < ANIMATION_DURATION) {
+            setReelBackground(reelElement, getRandomSymbol());
             requestAnimationFrame(shuffleFrame);
         } else {
-            reelElement.style.backgroundImage = `url('images/${stopSymbol}.png')`;
+            setReelBackground(reelElement, stopSymbol);
+            isSpinning = false;
         }
     }
 
@@ -61,7 +98,30 @@ function updateBalance(resultMessage, flashClass) {
     if (flashClass) {
         setTimeout(() => {
             document.querySelector('.reels').classList.remove(flashClass);
-        }, 2000);
+        }, RESULT_DISPLAY_DELAY);
+    }
+}
+
+function handleWin(payout) {
+    playerBalance += payout;
+
+    // Flashing effect when there's a win
+    document.querySelector('.reels').classList.add('flash');
+    updateBalance(`Congratulations! You won ${payout.toLocaleString()} coins!`, 'flash');
+}
+
+function handleLoss(wager) {
+    playerBalance -= wager;
+    updateBalance(`Try again. You lost ${wager.toLocaleString()} coins.`, '');
+
+    if (playerBalance <= 0) {
+        const startOver = confirm("You are out of money. Do you want to start over?");
+        if (startOver) {
+            playerBalance = 100;
+            updateBalance("Game restarted. Good luck!", '');
+        } else {
+            // Optionally, you can disable the spin button or provide other options
+        }
     }
 }
 
@@ -75,16 +135,20 @@ function spin() {
     const result2 = getRandomSymbol();
     const result3 = getRandomSymbol();
 
-    reel1.style.backgroundImage = `url('images/${result1}.png')`;
-    reel2.style.backgroundImage = `url('images/${result2}.png')`;
-    reel3.style.backgroundImage = `url('images/${result3}.png')`;
+    setReelBackground(reel1, result1);
+    setReelBackground(reel2, result2);
+    setReelBackground(reel3, result3);
 
     // Remove the flashing class before starting the spin
     document.querySelector('.reels').classList.remove('flash');
 
-    shuffleReel(reel1, result1);
-    shuffleReel(reel2, result2);
-    shuffleReel(reel3, result3);
+    //Click and touch screen
+    document.getElementById("spinButton").addEventListener("click", spin);
+    document.getElementById("spinButton").addEventListener("touchstart", spin);
+
+    spinReel(reel1, result1);
+    spinReel(reel2, result2);
+    spinReel(reel3, result3);
 
     const wager = parseInt(wagerInput.value, 10);
 
@@ -94,34 +158,33 @@ function spin() {
     }
 
     setTimeout(() => {
-        reel1.style.backgroundImage = `url('images/${result1}.png')`;
-        reel2.style.backgroundImage = `url('images/${result2}.png')`;
-        reel3.style.backgroundImage = `url('images/${result3}.png')`;
+        setReelBackground(reel1, result1);
+        setReelBackground(reel2, result2);
+        setReelBackground(reel3, result3);
 
         if (result1 === result2 && result2 === result3) {
             const payout = payouts[result1] * wager;
-            playerBalance += payout;
 
             // Flashing effect when there's a win
-            document.querySelector('.reels').classList.add('flash');
-            updateBalance(`Congratulations! You won ${payout.toLocaleString()} coins!`, 'flash');
+            handleWin(payout);
         } else {
-            playerBalance -= wager;
-            updateBalance(`Try again. You lost ${wager.toLocaleString()} coins.`, '');
-            
-            if (playerBalance <= 0) {
-                const startOver = confirm("You are out of money. Do you want to start over?");
-                if (startOver) {
-                    playerBalance = 100;
-                    updateBalance("Game restarted. Good luck!", '');
-                } else {
-                    // Optionally, you can disable the spin button or provide other options
-                }
-            }
+            // Handle loss and check for game over condition
+            handleLoss(wager);
         }
-    }, 2000);
+    }, RESULT_DISPLAY_DELAY);
 }
 
 updateBalance();
 
 document.getElementById("spinButton").addEventListener("click", spin);
+document.getElementById("spinButton").addEventListener("touchstart", spin);
+
+const reels = document.querySelectorAll('.reel');
+reels.forEach((reel) => {
+    reel.addEventListener('touchstart', handleReelTouch);
+});
+
+function handleReelTouch(event) {
+    // Handle touch interaction for the reels if needed
+    // You can customize this function based on your requirements
+}
