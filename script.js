@@ -1,5 +1,5 @@
-const ANIMATION_DURATION = 1500;
-const RESULT_DISPLAY_DELAY = 1600;
+const ANIMATION_DURATION = 1000;
+const RESULT_DISPLAY_DELAY = 1100;
 
 const symbols = ["cherry", "lemon", "orange", "plum", "bell", "bar"];
 const payouts = {
@@ -11,7 +11,7 @@ const payouts = {
     "bell": 50
 };
 
-let playerBalance = parseInt(localStorage.getItem("playerBalance")) || 150;
+let playerBalance = parseInt(localStorage.getItem("playerBalance")) || 200;
 
 function getRandomSymbol() {
     const randomValue = Math.random();
