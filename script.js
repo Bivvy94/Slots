@@ -117,7 +117,7 @@ function handleLoss(wager) {
     if (playerBalance <= 0) {
         const startOver = confirm("You are out of money. Do you want to start over?");
         if (startOver) {
-            playerBalance = 100;
+            playerBalance = 200;
             updateBalance("Game restarted. Good luck!", '');
         } else {
             // Optionally, you can disable the spin button or provide other options
